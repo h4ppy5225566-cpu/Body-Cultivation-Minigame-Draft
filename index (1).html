@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Body Cultivation Minigames</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --panel: #0f0f1a;
+    --border: #2a2a3a;
+    --gold: #c9a84c;
+    --gold-light: #f0d080;
+    --jade: #4caf84;
+    --jade-dark: #2d7a5a;
+    --crimson: #c94c4c;
+    --sky: #4c84c9;
+    --purple: #8a4cc9;
+    --text: #d4cfc7;
+    --dim: #6b6570;
+    --glow: 0 0 20px rgba(201,168,76,0.3);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Crimson Pro', serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+  }
+
+  /* Background grain */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .header {
+    text-align: center;
+    padding: 30px 20px 20px;
+    position: relative;
+    z-index: 1;
+  }
+  .header h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 900;
+    color: var(--gold);
+    letter-spacing: 0.15em;
+    text-shadow: 0 0 30px rgba(201,168,76,0.5);
+  }
+  .header p {
+    font-size: 1.1rem;
+    color: var(--dim);
+    margin-top: 6px;
+    font-style: italic;
+    letter-spacing: 0.05em;
+  }
+
+  /* Realm selector */
+  .realm-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 6px;
+    margin: 0 20px 24px;
+    flex-wrap: wrap;
+    justify-content: center;
+    position: relative; z-index: 1;
+  }
+  .realm-tab {
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    border: none;
+    background: transparent;
+    color: var(--dim);
+    transition: all 0.25s;
+    white-space: nowrap;
+  }
+  .realm-tab:hover { color: var(--text); }
+  .realm-tab.active {
+    color: var(--bg);
+    font-weight: 700;
+  }
+  .realm-tab[data-game="endurance"].active { background: var(--jade); box-shadow: 0 0 12px rgba(76,175,132,0.4); }
+  .realm-tab[data-game="impact"].active { background: var(--sky); box-shadow: 0 0 12px rgba(76,132,201,0.4); }
+  .realm-tab[data-game="divine"].active { background: var(--gold); box-shadow: 0 0 12px rgba(201,168,76,0.4); }
+  .realm-tab[data-game="chaos"].active { background: var(--crimson); box-shadow: 0 0 12px rgba(201,76,76,0.4); }
+
+  .realm-sub-label {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--dim);
+    font-style: italic;
+    margin-bottom: 16px;
+    position: relative; z-index: 1;
+  }
+
+  /* Arena */
+  .arena {
+    width: min(580px, 96vw);
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 24px;
+    position: relative;
+    z-index: 1;
+    min-height: 380px;
+    display: flex;
+    flex-direction: column;
+  }
+  .arena-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    letter-spacing: 0.12em;
+    color: var(--gold);
+    text-align: center;
+    margin-bottom: 6px;
+  }
+  .arena-subtitle {
+    font-size: 0.9rem;
+    color: var(--dim);
+    text-align: center;
+    font-style: italic;
+    margin-bottom: 20px;
+  }
+
+  .score-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 0.85rem;
+  }
+  .score-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .score-label { color: var(--dim); font-size: 0.75rem; letter-spacing: 0.05em; }
+  .score-val { font-family: 'Cinzel', serif; font-size: 1.1rem; color: var(--gold); }
+
+  /* ========== ENDURANCE PRESS ========== */
+  #game-endurance { display: flex; flex-direction: column; gap: 14px; }
+
+  .bar-track {
+    position: relative;
+    height: 44px;
+    background: #141420;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .bar-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: linear-gradient(90deg, var(--jade-dark), var(--jade));
+    border-radius: 8px;
+    transition: width 0.016s linear;
+    width: 0%;
+  }
+  .zone-overlay {
+    position: absolute;
+    top: 0; bottom: 0;
+    background: rgba(201,168,76,0.25);
+    border: 2px solid var(--gold);
+    border-radius: 4px;
+    transition: left 0.6s cubic-bezier(0.22,1,0.36,1);
+    z-index: 2;
+  }
+  .zone-center {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 2px;
+    background: var(--gold);
+    z-index: 3;
+    transition: left 0.6s cubic-bezier(0.22,1,0.36,1);
+  }
+  .hold-btn {
+    padding: 14px;
+    border-radius: 8px;
+    border: 1px solid var(--jade);
+    background: rgba(76,175,132,0.1);
+    color: var(--jade);
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.1s;
+    text-align: center;
+  }
+  .hold-btn:active, .hold-btn.held {
+    background: rgba(76,175,132,0.25);
+    box-shadow: 0 0 16px rgba(76,175,132,0.3);
+  }
+
+  /* ========== IMPACT TIMING ========== */
+  #game-impact { position: relative; min-height: 300px; }
+  .impact-arena {
+    position: relative;
+    width: 100%;
+    height: 280px;
+    background: #0c0c18;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .hit-circle {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+  }
+  .hit-circle .inner {
+    position: absolute;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: rgba(76,132,201,0.35);
+    border: 2px solid var(--sky);
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    z-index: 2;
+  }
+  .hit-circle .outer {
+    position: absolute;
+    border-radius: 50%;
+    border: 3px solid var(--sky);
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    opacity: 0.8;
+    z-index: 1;
+  }
+  .impact-strip {
+    text-align: center;
+    margin-top: 12px;
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+    min-height: 28px;
+    color: var(--sky);
+  }
+
+  /* ========== DIVINE RESONANCE ========== */
+  #game-divine { display: flex; flex-direction: column; gap: 14px; }
+  .phase-label {
+    font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
+    letter-spacing: 0.12em;
+    text-align: center;
+    min-height: 32px;
+    color: var(--gold);
+  }
+  .seq-tiles {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    min-height: 52px;
+    align-items: center;
+  }
+  .seq-tile {
+    width: 46px; height: 46px;
+    border-radius: 8px;
+    background: #141420;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    transition: all 0.2s;
+  }
+  .seq-tile.lit { background: rgba(201,168,76,0.2); border-color: var(--gold); }
+  .seq-tile.correct { background: rgba(76,175,132,0.2); border-color: var(--jade); }
+  .seq-tile.wrong { background: rgba(201,76,76,0.2); border-color: var(--crimson); }
+  .timer-bar-wrap {
+    height: 6px;
+    background: #141420;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .timer-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gold-light), var(--gold));
+    border-radius: 4px;
+    transition: width 0.1s linear;
+  }
+  .dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 52px);
+    grid-template-rows: repeat(3, 52px);
+    gap: 6px;
+    justify-content: center;
+    margin: 0 auto;
+  }
+  .dpad-btn {
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: rgba(201,168,76,0.08);
+    color: var(--gold);
+    font-size: 1.3rem;
+    cursor: pointer;
+    transition: all 0.1s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .dpad-btn:hover { background: rgba(201,168,76,0.2); }
+  .dpad-btn:active { background: rgba(201,168,76,0.35); transform: scale(0.93); }
+  .dpad-center { opacity: 0; pointer-events: none; }
+
+  /* ========== CHAOS ENDURANCE ========== */
+  #game-chaos { display: flex; flex-direction: column; gap: 12px; }
+  .dual-bars { display: flex; flex-direction: column; gap: 8px; }
+  .chaos-bar-row { display: flex; flex-direction: column; gap: 4px; }
+  .chaos-bar-label {
+    display: flex; justify-content: space-between;
+    font-size: 0.8rem;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.06em;
+    color: var(--dim);
+  }
+  .chaos-track {
+    height: 22px;
+    background: #141420;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    position: relative;
+  }
+  .chaos-fill-stab {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: linear-gradient(90deg, var(--jade-dark), var(--jade));
+    border-radius: 6px;
+    transition: width 0.05s;
+  }
+  .chaos-fill-chaos {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: linear-gradient(90deg, #8a2020, var(--crimson));
+    border-radius: 6px;
+    transition: width 0.05s;
+  }
+  .stab-zone {
+    position: absolute;
+    top: 0; bottom: 0;
+    background: rgba(201,168,76,0.25);
+    border: 1px solid var(--gold);
+    border-radius: 4px;
+    transition: left 0.1s;
+    z-index: 2;
+  }
+  .burst-panel {
+    position: relative;
+    height: 100px;
+    background: #0c0c18;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .burst-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    color: var(--dim);
+    letter-spacing: 0.1em;
+  }
+  .burst-ring-outer {
+    position: absolute;
+    border-radius: 50%;
+    border: 3px solid var(--crimson);
+    transition: width 0.05s, height 0.05s;
+    display: none;
+  }
+  .burst-ring-inner {
+    position: absolute;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: rgba(201,76,76,0.35);
+    border: 2px solid var(--crimson);
+    display: none;
+  }
+  .chaos-controls {
+    display: flex;
+    gap: 10px;
+  }
+  .chaos-btn {
+    flex: 1;
+    padding: 14px;
+    border-radius: 8px;
+    border: 1px solid;
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.1s;
+    user-select: none;
+    text-align: center;
+  }
+  .stab-btn {
+    border-color: var(--jade);
+    background: rgba(76,175,132,0.1);
+    color: var(--jade);
+  }
+  .stab-btn.held {
+    background: rgba(76,175,132,0.3);
+    box-shadow: 0 0 16px rgba(76,175,132,0.3);
+  }
+  .suppress-btn {
+    border-color: var(--crimson);
+    background: rgba(201,76,76,0.1);
+    color: var(--crimson);
+  }
+  .suppress-btn:active {
+    background: rgba(201,76,76,0.3);
+    box-shadow: 0 0 16px rgba(201,76,76,0.3);
+  }
+  .chaos-feedback {
+    text-align: center;
+    font-size: 0.85rem;
+    min-height: 22px;
+    color: var(--dim);
+    font-style: italic;
+  }
+
+  /* Judgement flash */
+  .judgement {
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    font-size: 1.3rem;
+    letter-spacing: 0.12em;
+    min-height: 36px;
+    transition: opacity 0.3s;
+  }
+  .j-perfect { color: var(--gold); text-shadow: 0 0 16px rgba(201,168,76,0.7); }
+  .j-good { color: var(--jade); }
+  .j-early, .j-earlylate { color: var(--sky); }
+  .j-miss { color: var(--crimson); }
+  .j-correct { color: var(--gold); text-shadow: 0 0 16px rgba(201,168,76,0.7); }
+  .j-wrong { color: var(--crimson); }
+  .j-timeout { color: var(--dim); }
+
+  .start-btn {
+    padding: 12px 28px;
+    border-radius: 8px;
+    border: 1px solid var(--gold);
+    background: rgba(201,168,76,0.1);
+    color: var(--gold);
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin: 0 auto;
+    display: block;
+  }
+  .start-btn:hover {
+    background: rgba(201,168,76,0.25);
+    box-shadow: var(--glow);
+  }
+
+  /* Realm level selector */
+  .realm-level-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 4px;
+  }
+  .realm-level-row label {
+    font-size: 0.85rem; color: var(--dim);
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.06em;
+  }
+  .realm-slider {
+    -webkit-appearance: none;
+    width: 140px; height: 4px;
+    background: var(--border);
+    border-radius: 4px;
+    outline: none;
+  }
+  .realm-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--gold);
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(201,168,76,0.4);
+  }
+  .realm-val {
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem;
+    color: var(--gold);
+    min-width: 28px;
+    text-align: center;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+  }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⬡ BODY CULTIVATION ⬡</h1>
+  <p>Four paths to physical transcendence</p>
+</div>
+
+<div class="realm-tabs">
+  <button class="realm-tab active" data-game="endurance">Endurance Press<br><small style="opacity:0.7">Mortal Body · 1–9</small></button>
+  <button class="realm-tab" data-game="impact">Impact Timing<br><small style="opacity:0.7">Warrior Body · 10–18</small></button>
+  <button class="realm-tab" data-game="divine">Divine Resonance<br><small style="opacity:0.7">Sacred Body · 19–27</small></button>
+  <button class="realm-tab" data-game="chaos">Chaos Endurance<br><small style="opacity:0.7">Undying/Primordial · 28–50</small></button>
+</div>
+
+<!-- ===================== ENDURANCE PRESS ===================== -->
+<div class="arena" id="arena-endurance">
+  <div class="arena-title">ENDURANCE PRESS</div>
+  <div class="arena-subtitle">Hold to fill the bar, release when it enters the golden zone</div>
+
+  <div class="realm-level-row">
+    <label>REALM</label>
+    <input type="range" class="realm-slider" id="ep-realm" min="1" max="9" value="1">
+    <span class="realm-val" id="ep-realm-val">1</span>
+  </div>
+
+  <div class="score-row">
+    <div class="score-item"><span class="score-label">ATTEMPTS</span><span class="score-val" id="ep-attempts">0</span></div>
+    <div class="score-item"><span class="score-label">PERFECT</span><span class="score-val" id="ep-perfect">0</span></div>
+    <div class="score-item"><span class="score-label">PHYSIQUE</span><span class="score-val" id="ep-physique">0</span></div>
+  </div>
+
+  <div id="game-endurance">
+    <div class="bar-track" id="ep-track">
+      <div class="bar-fill" id="ep-fill"></div>
+      <div class="zone-overlay" id="ep-zone"></div>
+      <div class="zone-center" id="ep-zone-center"></div>
+    </div>
+    <div class="judgement" id="ep-judgement"></div>
+    <div class="hold-btn" id="ep-btn" onmousedown="epHold()" onmouseup="epRelease()" ontouchstart="event.preventDefault();epHold()" ontouchend="event.preventDefault();epRelease()">HOLD TO FILL — RELEASE IN THE ZONE</div>
+  </div>
+</div>
+
+<!-- ===================== IMPACT TIMING ===================== -->
+<div class="arena hidden" id="arena-impact">
+  <div class="arena-title">IMPACT TIMING</div>
+  <div class="arena-subtitle">Click each circle when the outer ring meets the inner target</div>
+
+  <div class="realm-level-row">
+    <label>REALM</label>
+    <input type="range" class="realm-slider" id="it-realm" min="10" max="18" value="10">
+    <span class="realm-val" id="it-realm-val">10</span>
+  </div>
+
+  <div class="score-row">
+    <div class="score-item"><span class="score-label">WAVES</span><span class="score-val" id="it-waves">0</span></div>
+    <div class="score-item"><span class="score-label">PERFECT</span><span class="score-val" id="it-perfect">0</span></div>
+    <div class="score-item"><span class="score-label">PHYSIQUE</span><span class="score-val" id="it-physique">0</span></div>
+  </div>
+
+  <div id="game-impact">
+    <div class="impact-arena" id="it-arena"></div>
+    <div class="impact-strip" id="it-strip">Press Start to begin a wave</div>
+  </div>
+
+  <br>
+  <button class="start-btn" id="it-start-btn" onclick="itStartWave()">START WAVE</button>
+</div>
+
+<!-- ===================== DIVINE RESONANCE ===================== -->
+<div class="arena hidden" id="arena-divine">
+  <div class="arena-title">DIVINE RESONANCE</div>
+  <div class="arena-subtitle">Memorise the arrow sequence, then reproduce it with WASD or the buttons</div>
+
+  <div class="realm-level-row">
+    <label>REALM</label>
+    <input type="range" class="realm-slider" id="dr-realm" min="19" max="27" value="19">
+    <span class="realm-val" id="dr-realm-val">19</span>
+  </div>
+
+  <div class="score-row">
+    <div class="score-item"><span class="score-label">ROUNDS</span><span class="score-val" id="dr-rounds">0</span></div>
+    <div class="score-item"><span class="score-label">CORRECT</span><span class="score-val" id="dr-correct">0</span></div>
+    <div class="score-item"><span class="score-label">PHYSIQUE</span><span class="score-val" id="dr-physique">0</span></div>
+  </div>
+
+  <div id="game-divine">
+    <div class="phase-label" id="dr-phase">Press Start to begin</div>
+    <div class="seq-tiles" id="dr-tiles"></div>
+    <div class="timer-bar-wrap"><div class="timer-bar-fill" id="dr-timer" style="width:100%"></div></div>
+    <div class="dpad" id="dr-dpad">
+      <button class="dpad-btn" onclick="drInput('Up')" style="grid-column:2;grid-row:1" title="W">▲<br><small style="font-size:0.55rem;opacity:0.6">W</small></button>
+      <button class="dpad-btn" onclick="drInput('Left')" style="grid-column:1;grid-row:2" title="A">◀<br><small style="font-size:0.55rem;opacity:0.6">A</small></button>
+      <div class="dpad-btn dpad-center" style="grid-column:2;grid-row:2"></div>
+      <button class="dpad-btn" onclick="drInput('Right')" style="grid-column:3;grid-row:2" title="D">▶<br><small style="font-size:0.55rem;opacity:0.6">D</small></button>
+      <button class="dpad-btn" onclick="drInput('Down')" style="grid-column:2;grid-row:3" title="S">▼<br><small style="font-size:0.55rem;opacity:0.6">S</small></button>
+    </div>
+    <div class="judgement" id="dr-judgement"></div>
+  </div>
+
+  <button class="start-btn" id="dr-start-btn" onclick="drStart()">START ROUND</button>
+</div>
+
+<!-- ===================== CHAOS ENDURANCE ===================== -->
+<div class="arena hidden" id="arena-chaos">
+  <div class="arena-title">CHAOS ENDURANCE</div>
+  <div class="arena-subtitle">Hold Stability in the zone, Suppress bursts before they expire</div>
+
+  <div class="realm-level-row">
+    <label>REALM</label>
+    <input type="range" class="realm-slider" id="ce-realm" min="28" max="50" value="28">
+    <span class="realm-val" id="ce-realm-val">28</span>
+  </div>
+
+  <div class="score-row">
+    <div class="score-item"><span class="score-label">TIME</span><span class="score-val" id="ce-time">0s</span></div>
+    <div class="score-item"><span class="score-label">SUPPRESSED</span><span class="score-val" id="ce-suppressed">0</span></div>
+    <div class="score-item"><span class="score-label">PHYSIQUE</span><span class="score-val" id="ce-physique">0</span></div>
+  </div>
+
+  <div id="game-chaos">
+    <div class="dual-bars">
+      <div class="chaos-bar-row">
+        <div class="chaos-bar-label"><span>⬡ STABILITY</span><span id="ce-stab-pct">50%</span></div>
+        <div class="chaos-track">
+          <div class="chaos-fill-stab" id="ce-stab-fill" style="width:50%"></div>
+          <div class="stab-zone" id="ce-stab-zone"></div>
+        </div>
+      </div>
+      <div class="chaos-bar-row">
+        <div class="chaos-bar-label"><span>☯ CHAOS</span><span id="ce-chaos-pct">0%</span></div>
+        <div class="chaos-track">
+          <div class="chaos-fill-chaos" id="ce-chaos-fill" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+    <div class="burst-panel" id="ce-burst-panel">
+      <span class="burst-label" id="ce-burst-label">No active burst</span>
+      <div class="burst-ring-outer" id="ce-burst-outer"></div>
+      <div class="burst-ring-inner" id="ce-burst-inner"></div>
+    </div>
+    <div class="chaos-controls">
+      <div class="chaos-btn stab-btn" id="ce-stab-btn"
+        onmousedown="ceHoldStab(true)" onmouseup="ceHoldStab(false)"
+        ontouchstart="event.preventDefault();ceHoldStab(true)"
+        ontouchend="event.preventDefault();ceHoldStab(false)">
+        HOLD STABILITY<br><small style="opacity:0.7">[Space / Hold]</small>
+      </div>
+      <div class="chaos-btn suppress-btn" id="ce-suppress-btn"
+        onmousedown="ceSuppress()" ontouchstart="event.preventDefault();ceSuppress()">
+        SUPPRESS BURST<br><small style="opacity:0.7">[E / Tap]</small>
+      </div>
+    </div>
+    <div class="chaos-feedback" id="ce-feedback">—</div>
+  </div>
+
+  <button class="start-btn" id="ce-start-btn" onclick="ceToggle()">START SESSION</button>
+</div>
+
+<br><br>
+
+<script>
+// ======================== NAVIGATION ========================
+const tabs = document.querySelectorAll('.realm-tab');
+const arenas = ['endurance','impact','divine','chaos'];
+
+tabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    tabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const game = tab.dataset.game;
+    arenas.forEach(a => {
+      document.getElementById('arena-' + a).classList.toggle('hidden', a !== game);
+    });
+  });
+});
+
+// ======================== ENDURANCE PRESS ========================
+let epHolding = false;
+let epFillPct = 0;
+let epZonePct = 10;
+let epZoneW = 30;
+let epLastTime = null;
+let epAttempts = 0, epPerfect = 0, epPhysique = 0;
+let epJudgeTimeout = null;
+let epZoneTweenTimeout = null;
+let epTweenTarget = 10;
+let epTweenStart = 10;
+let epTweenProgress = 0;
+let epTweening = false;
+let epJudging = false; // block hold during judgement cooldown
+
+const epBtn = document.getElementById('ep-btn');
+const epFill = document.getElementById('ep-fill');
+const epZone = document.getElementById('ep-zone');
+const epZoneCenter = document.getElementById('ep-zone-center');
+const epJudgement = document.getElementById('ep-judgement');
+const epRealmSlider = document.getElementById('ep-realm');
+const epRealmVal = document.getElementById('ep-realm-val');
+
+function epGetZoneW(realm) { return Math.max(14, 30 - (realm - 1) * 1.8); }
+function epGetFillSpeed(realm) { return 0.7 + (9 - realm) * 0.055; }
+
+epRealmSlider.addEventListener('input', () => {
+  epRealmVal.textContent = epRealmSlider.value;
+  epZoneW = epGetZoneW(parseInt(epRealmSlider.value));
+  epUpdateZoneVisual();
+});
+
+function epUpdateZoneVisual() {
+  const trackW = document.getElementById('ep-track').offsetWidth;
+  const zonePixW = (epZoneW / 100) * trackW;
+  const zonePixL = (epZonePct / 100) * trackW;
+  epZone.style.left = zonePixL + 'px';
+  epZone.style.width = zonePixW + 'px';
+  epZoneCenter.style.left = (zonePixL + zonePixW / 2) + 'px';
+}
+
+function epTweenToRandom() {
+  const realm = parseInt(epRealmSlider.value);
+  epZoneW = epGetZoneW(realm);
+  const maxLeft = 100 - epZoneW - 2;
+  epTweenTarget = 2 + Math.random() * maxLeft;
+  epTweenStart = epZonePct;
+  epTweenProgress = 0;
+  epTweening = true;
+}
+
+function epHold() {
+  if (epJudging) return;
+  epHolding = true;
+  epBtn.classList.add('held');
+  epBtn.textContent = 'HOLDING... RELEASE IN THE ZONE';
+}
+
+function epRelease() {
+  if (!epHolding) return;
+  epHolding = false;
+  epBtn.classList.remove('held');
+  epBtn.textContent = 'HOLD TO FILL — RELEASE IN THE ZONE';
+  epJudge();
+}
+
+function epLoop(ts) {
+  if (!epLastTime) epLastTime = ts;
+  const dt = (ts - epLastTime) / 1000;
+  epLastTime = ts;
+
+  const realm = parseInt(epRealmSlider.value);
+  const fillSpeed = epGetFillSpeed(realm);
+
+  if (epHolding) {
+    epFillPct = Math.min(epFillPct + (dt / fillSpeed) * 100, 100);
+  } else if (!epJudging) {
+    epFillPct = Math.max(epFillPct - (dt / 0.4) * 100, 0);
+  }
+
+  if (epTweening) {
+    epTweenProgress = Math.min(epTweenProgress + dt / 0.6, 1);
+    const t = 1 - Math.pow(1 - epTweenProgress, 3);
+    epZonePct = epTweenStart + (epTweenTarget - epTweenStart) * t;
+    if (epTweenProgress >= 1) { epZonePct = epTweenTarget; epTweening = false; }
+  }
+
+  epFill.style.width = epFillPct + '%';
+  epUpdateZoneVisual();
+  requestAnimationFrame(epLoop);
+}
+
+function epJudge() {
+  const centre = epZonePct + epZoneW / 2;
+  const dist = Math.abs(epFillPct - centre);
+  const half = epZoneW / 2;
+  let result, mult;
+  if (dist <= half * 0.3) { result = 'PERFECT'; mult = 1.0; }
+  else if (dist <= half * 0.75) { result = 'GOOD'; mult = 0.75; }
+  else if (dist <= half) { result = 'EARLY / LATE'; mult = 0.5; }
+  else { result = 'MISS'; mult = 0.1; }
+
+  epAttempts++;
+  if (result === 'PERFECT') epPerfect++;
+  epPhysique += Math.round(mult * 10);
+
+  document.getElementById('ep-attempts').textContent = epAttempts;
+  document.getElementById('ep-perfect').textContent = epPerfect;
+  document.getElementById('ep-physique').textContent = epPhysique;
+
+  epJudgement.className = 'judgement j-' + result.replace(/\s\/\s/,'').replace(' ','').toLowerCase();
+  epJudgement.textContent = result;
+
+  clearTimeout(epJudgeTimeout);
+  epJudgeTimeout = setTimeout(() => { epJudgement.textContent = ''; }, 1200);
+
+  epJudging = true;
+  epFillPct = 0;
+  clearTimeout(epZoneTweenTimeout);
+  epZoneTweenTimeout = setTimeout(() => { epTweenToRandom(); epJudging = false; }, 350);
+}
+
+// init
+epZoneW = epGetZoneW(1);
+epTweenToRandom();
+requestAnimationFrame(epLoop);
+
+// ======================== IMPACT TIMING ========================
+let itWaves = 0, itPerfect = 0, itPhysique = 0;
+let itActive = false;
+
+document.getElementById('it-realm').addEventListener('input', function() {
+  document.getElementById('it-realm-val').textContent = this.value;
+});
+
+function itGetTargets(realm) {
+  const r = parseInt(realm);
+  return Math.min(11, 3 + Math.floor((r - 10) / 2) * 2);
+}
+function itGetLifetime(realm) {
+  const r = parseInt(realm);
+  const min = Math.max(0.7, 1.8 - (r - 10) * 0.11);
+  const max = Math.max(1.0, 2.0 - (r - 10) * 0.1);
+  return min + Math.random() * (max - min);
+}
+
+function itStartWave() {
+  if (itActive) return;
+  itActive = true;
+  document.getElementById('it-start-btn').textContent = 'WAVE IN PROGRESS...';
+  document.getElementById('it-strip').textContent = '';
+  const arena = document.getElementById('it-arena');
+  arena.innerHTML = '';
+
+  const realm = document.getElementById('it-realm').value;
+  const count = itGetTargets(realm);
+  let pending = count;
+  let wavePerfect = 0;
+  let waveMisses = 0;
+
+  const ARROW_DIRS = ['▲','▼','◀','▶'];
+  const arenaRect = arena.getBoundingClientRect();
+
+  for (let i = 0; i < count; i++) {
+    setTimeout(() => {
+      const lifetime = itGetLifetime(realm);
+      const spawnTime = performance.now();
+
+      const div = document.createElement('div');
+      div.className = 'hit-circle';
+      const px = 10 + Math.random() * 80;
+      const py = 10 + Math.random() * 80;
+      div.style.left = px + '%';
+      div.style.top = py + '%';
+
+      const inner = document.createElement('div');
+      inner.className = 'inner';
+
+      const outer = document.createElement('div');
+      outer.className = 'outer';
+      const startPx = 80;
+      const endPx = 28;
+      outer.style.width = startPx + 'px';
+      outer.style.height = startPx + 'px';
+
+      div.appendChild(inner);
+      div.appendChild(outer);
+      arena.appendChild(div);
+
+      let fired = false;
+      const startAnim = performance.now();
+
+      function animate(ts) {
+        const elapsed = (ts - startAnim) / 1000;
+        const t = Math.min(elapsed / lifetime, 1);
+        const sz = startPx + (endPx - startPx) * t;
+        outer.style.width = sz + 'px';
+        outer.style.height = sz + 'px';
+        if (!fired && t < 1) requestAnimationFrame(animate);
+      }
+      requestAnimationFrame(animate);
+
+      div.addEventListener('click', () => {
+        if (fired) return;
+        fired = true;
+        const elapsed = (performance.now() - startAnim) / 1000;
+        const t = elapsed / lifetime;
+        const dist = Math.abs(t - 1);
+        let result;
+        if (dist < 0.12) result = 'PERFECT';
+        else if (dist < 0.28) result = 'GOOD';
+        else result = 'EARLY';
+
+        div.style.opacity = '0';
+        div.style.transform = 'translate(-50%,-50%) scale(1.3)';
+        div.style.transition = 'all 0.2s';
+        setTimeout(() => div.remove(), 200);
+
+        let mult;
+        if (result === 'PERFECT') { mult = 1.0; wavePerfect++; }
+        else if (result === 'GOOD') { mult = 0.75; }
+        else { mult = 0.5; }
+        itPhysique += Math.round(mult * 10);
+        document.getElementById('it-strip').textContent = result;
+        document.getElementById('it-strip').className = 'impact-strip j-' + result.toLowerCase();
+
+        pending--;
+        if (pending === 0) itEndWave(wavePerfect, waveMisses);
+      });
+
+      setTimeout(() => {
+        if (!fired) {
+          fired = true;
+          waveMisses++;
+          div.style.opacity = '0';
+          div.style.transition = 'opacity 0.2s';
+          setTimeout(() => div.remove(), 200);
+          itPhysique += 1;
+          document.getElementById('it-strip').textContent = 'MISS!';
+          document.getElementById('it-strip').className = 'impact-strip j-miss';
+          pending--;
+          if (pending === 0) itEndWave(wavePerfect, waveMisses);
+        }
+      }, lifetime * 1000 + 300);
+
+    }, i * 280);
+  }
+}
+
+function itEndWave(perfects, misses) {
+  itWaves++;
+  itPerfect += perfects;
+  document.getElementById('it-waves').textContent = itWaves;
+  document.getElementById('it-perfect').textContent = itPerfect;
+  document.getElementById('it-physique').textContent = itPhysique;
+  itActive = false;
+  document.getElementById('it-start-btn').textContent = 'START WAVE';
+}
+
+// ======================== DIVINE RESONANCE ========================
+let drState = 'idle'; // idle, memorise, input
+let drSeq = [];
+let drIdx = 0;
+let drRounds = 0, drCorrect = 0, drPhysique = 0;
+let drTimerInterval = null;
+let drTimerStart = 0;
+let drInputTime = 4.5;
+
+const DIRS = ['Up','Down','Left','Right'];
+const DIR_GLYPH = { Up:'▲', Down:'▼', Left:'◀', Right:'▶' };
+
+document.getElementById('dr-realm').addEventListener('input', function() {
+  document.getElementById('dr-realm-val').textContent = this.value;
+});
+
+function drGetSeqLen(realm) { return Math.min(7, 3 + Math.floor((realm - 19) / 2)); }
+function drGetMemTime(len) { return 2.0 + Math.max(0, len - 3) * 0.3; }
+function drGetInputTime(len) { return Math.max(2.4, 4.5 - (len - 3) * 0.35); }
+
+function drStart() {
+  if (drState !== 'idle') return;
+  document.getElementById('dr-start-btn').disabled = true;
+
+  const realm = parseInt(document.getElementById('dr-realm').value);
+  const len = drGetSeqLen(realm);
+  const memTime = drGetMemTime(len);
+  drInputTime = drGetInputTime(len);
+
+  drSeq = [];
+  for (let i = 0; i < len; i++) drSeq.push(DIRS[Math.floor(Math.random() * 4)]);
+  drIdx = 0;
+  drState = 'memorise';
+
+  // Show tiles
+  const tilesDiv = document.getElementById('dr-tiles');
+  tilesDiv.innerHTML = '';
+  drSeq.forEach(dir => {
+    const t = document.createElement('div');
+    t.className = 'seq-tile lit';
+    t.textContent = DIR_GLYPH[dir];
+    tilesDiv.appendChild(t);
+  });
+
+  document.getElementById('dr-phase').textContent = 'MEMORISE!';
+  document.getElementById('dr-timer').style.width = '100%';
+  document.getElementById('dr-judgement').textContent = '';
+
+  setTimeout(() => {
+    // Hide
+    tilesDiv.querySelectorAll('.seq-tile').forEach(t => {
+      t.textContent = '?';
+      t.classList.remove('lit');
+    });
+    drState = 'input';
+    document.getElementById('dr-phase').textContent = 'REPRODUCE!';
+    drTimerStart = performance.now();
+    drTimerInterval = setInterval(drTickTimer, 50);
+  }, memTime * 1000);
+}
+
+function drTickTimer() {
+  const elapsed = (performance.now() - drTimerStart) / 1000;
+  const pct = Math.max(0, 1 - elapsed / drInputTime);
+  document.getElementById('dr-timer').style.width = (pct * 100) + '%';
+  if (elapsed >= drInputTime) {
+    clearInterval(drTimerInterval);
+    drEndRound('Timeout');
+  }
+}
+
+function drInput(dir) {
+  if (drState !== 'input') return;
+  const tiles = document.getElementById('dr-tiles').querySelectorAll('.seq-tile');
+  if (dir === drSeq[drIdx]) {
+    tiles[drIdx].textContent = DIR_GLYPH[dir];
+    tiles[drIdx].classList.add('correct');
+    drIdx++;
+    if (drIdx >= drSeq.length) {
+      clearInterval(drTimerInterval);
+      drEndRound('Correct');
+    }
+  } else {
+    tiles[drIdx].textContent = DIR_GLYPH[dir];
+    tiles[drIdx].classList.add('wrong');
+    clearInterval(drTimerInterval);
+    drEndRound('Wrong');
+  }
+}
+
+function drEndRound(result) {
+  drState = 'idle';
+  drRounds++;
+  let mult;
+  if (result === 'Correct') { mult = 1.0; drCorrect++; }
+  else if (result === 'Timeout') { mult = 0.1; }
+  else { mult = 0.0; }
+  drPhysique += Math.round(mult * 10);
+
+  document.getElementById('dr-rounds').textContent = drRounds;
+  document.getElementById('dr-correct').textContent = drCorrect;
+  document.getElementById('dr-physique').textContent = drPhysique;
+
+  const jEl = document.getElementById('dr-judgement');
+  jEl.textContent = result.toUpperCase();
+  jEl.className = 'judgement j-' + result.toLowerCase();
+  document.getElementById('dr-phase').textContent = result === 'Correct' ? '✦ CORRECT ✦' : result === 'Wrong' ? '✖ WRONG' : '⏱ TIME OUT';
+
+  setTimeout(() => {
+    document.getElementById('dr-phase').textContent = 'Press Start to begin';
+    jEl.textContent = '';
+    document.getElementById('dr-start-btn').disabled = false;
+  }, 1500);
+}
+
+// Keyboard input for divine — WASD only (arrow keys would scroll the page)
+document.addEventListener('keydown', e => {
+  if (drState !== 'input') return;
+  const map = { w:'Up', s:'Down', a:'Left', d:'Right', W:'Up', S:'Down', A:'Left', D:'Right' };
+  if (map[e.key]) { e.preventDefault(); drInput(map[e.key]); }
+});
+
+// ======================== CHAOS ENDURANCE ========================
+let ceRunning = false;
+let ceStabPct = 50;
+let ceChaosPct = 0;
+let ceZonePos = 30;
+let ceZoneDir = 1;
+const CE_ZONE_W = 22;
+let ceHoldingStab = false;
+let ceBurstActive = false;
+let ceBurstAge = 0;
+let ceBurstLifetime = 2.0;
+let ceTimeSinceLastBurst = 0;
+let ceSuppressed = 0;
+let ceFalseTaps = 0;
+let cePhysique = 0;
+let ceElapsed = 0;
+let cePrevTs = null;
+let ceRaf = null;
+let ceBurstFreq = 5.0;
+
+document.getElementById('ce-realm').addEventListener('input', function() {
+  document.getElementById('ce-realm-val').textContent = this.value;
+});
+
+function ceGetParams(realm) {
+  const r = parseInt(realm);
+  const t = (r - 28) / 22;
+  const freq = 5.0 - t * 4.0;
+  const life = 2.0 - t * 1.5;
+  return { freq: Math.max(1.0, freq), life: Math.max(0.5, life) };
+}
+
+function ceHoldStab(on) {
+  ceHoldingStab = on;
+  const btn = document.getElementById('ce-stab-btn');
+  btn.classList.toggle('held', on);
+}
+
+function ceSuppress() {
+  if (!ceRunning) return;
+  if (!ceBurstActive) {
+    ceChaosPct = Math.min(ceChaosPct + 12, 100);
+    document.getElementById('ce-feedback').textContent = '+12% chaos — false tap!';
+    ceFalseTaps++;
+  } else {
+    ceChaosPct = Math.max(ceChaosPct - 8, 0);
+    ceBurstActive = false;
+    ceSuppressed++;
+    cePhysique += 8;
+    document.getElementById('ce-feedback').textContent = '✓ Burst suppressed!';
+    document.getElementById('ce-suppressed').textContent = ceSuppressed;
+    document.getElementById('ce-physique').textContent = cePhysique;
+    document.getElementById('ce-burst-outer').style.display = 'none';
+    document.getElementById('ce-burst-inner').style.display = 'none';
+    document.getElementById('ce-burst-label').style.display = '';
+    document.getElementById('ce-burst-label').textContent = 'No active burst';
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space') { e.preventDefault(); ceHoldStab(true); }
+  if (e.key === 'e' || e.key === 'E') { e.preventDefault(); ceSuppress(); }
+});
+document.addEventListener('keyup', e => {
+  if (e.code === 'Space') ceHoldStab(false);
+});
+
+function ceToggle() {
+  if (!ceRunning) {
+    ceRunning = true;
+    ceStabPct = 50; ceChaosPct = 0;
+    ceZonePos = 30; ceZoneDir = 1;
+    ceHoldingStab = false; ceBurstActive = false;
+    ceBurstAge = 0; ceTimeSinceLastBurst = 0;
+    ceSuppressed = 0; ceFalseTaps = 0; cePhysique = 0; ceElapsed = 0;
+    cePrevTs = null;
+    document.getElementById('ce-start-btn').textContent = 'END SESSION';
+    document.getElementById('ce-feedback').textContent = 'Hold Stability · Suppress Bursts!';
+    document.getElementById('ce-burst-label').textContent = 'No active burst';
+    ceRaf = requestAnimationFrame(ceLoop);
+  } else {
+    ceRunning = false;
+    ceHoldingStab = false;
+    document.getElementById('ce-stab-btn').classList.remove('held');
+    document.getElementById('ce-burst-outer').style.display = 'none';
+    document.getElementById('ce-burst-inner').style.display = 'none';
+    document.getElementById('ce-burst-label').style.display = '';
+    document.getElementById('ce-start-btn').textContent = 'START SESSION';
+    cancelAnimationFrame(ceRaf);
+  }
+}
+
+function ceLoop(ts) {
+  if (!ceRunning) return;
+  if (!cePrevTs) cePrevTs = ts;
+  const dt = Math.min((ts - cePrevTs) / 1000, 0.05);
+  cePrevTs = ts;
+  ceElapsed += dt;
+
+  const realm = parseInt(document.getElementById('ce-realm').value);
+  const { freq, life } = ceGetParams(realm);
+  ceBurstFreq = freq;
+  ceBurstLifetime = life;
+
+  // Zone movement
+  ceZonePos += ceZoneDir * dt * 8;
+  if (ceZonePos + CE_ZONE_W > 95) ceZoneDir = -1;
+  if (ceZonePos < 5) ceZoneDir = 1;
+
+  // Stability
+  const inZone = ceStabPct >= ceZonePos && ceStabPct <= ceZonePos + CE_ZONE_W;
+  if (ceHoldingStab) {
+    ceStabPct = Math.min(ceStabPct + dt * (inZone ? 8 : 22), 100);
+  } else {
+    ceStabPct = Math.max(ceStabPct - dt * 14, 0);
+  }
+
+  // Chaos drift
+  if (!inZone) ceChaosPct = Math.min(ceChaosPct + dt * 4, 100);
+  else if (ceHoldingStab) ceChaosPct = Math.max(ceChaosPct - dt * 2, 0);
+
+  // Burst logic
+  if (ceBurstActive) {
+    ceBurstAge += dt;
+    const progress = ceBurstAge / ceBurstLifetime;
+    const sz = 80 - progress * 52;
+    const outer = document.getElementById('ce-burst-outer');
+    outer.style.width = sz + 'px';
+    outer.style.height = sz + 'px';
+    if (ceBurstAge >= ceBurstLifetime) {
+      ceBurstActive = false;
+      ceChaosPct = Math.min(ceChaosPct + 25, 100);
+      document.getElementById('ce-feedback').textContent = '✖ Burst missed! +25% chaos';
+      document.getElementById('ce-burst-outer').style.display = 'none';
+      document.getElementById('ce-burst-inner').style.display = 'none';
+      document.getElementById('ce-burst-label').style.display = '';
+      document.getElementById('ce-burst-label').textContent = 'No active burst';
+    }
+  } else {
+    ceTimeSinceLastBurst += dt;
+    if (ceTimeSinceLastBurst >= ceBurstFreq) {
+      ceTimeSinceLastBurst = 0;
+      ceBurstActive = true;
+      ceBurstAge = 0;
+      document.getElementById('ce-burst-label').style.display = 'none';
+      document.getElementById('ce-burst-outer').style.display = 'block';
+      document.getElementById('ce-burst-inner').style.display = 'block';
+      document.getElementById('ce-feedback').textContent = '⚡ BURST! Suppress it!';
+    }
+  }
+
+  // Check ends
+  if (ceStabPct <= 0) { ceEndFail('Stability depleted!'); return; }
+  if (ceChaosPct >= 100) { ceEndFail('Chaos overflow!'); return; }
+
+  // Update UI
+  document.getElementById('ce-stab-fill').style.width = ceStabPct + '%';
+  document.getElementById('ce-chaos-fill').style.width = ceChaosPct + '%';
+  document.getElementById('ce-stab-pct').textContent = Math.round(ceStabPct) + '%';
+  document.getElementById('ce-chaos-pct').textContent = Math.round(ceChaosPct) + '%';
+  document.getElementById('ce-stab-zone').style.left = ceZonePos + '%';
+  document.getElementById('ce-stab-zone').style.width = CE_ZONE_W + '%';
+  document.getElementById('ce-time').textContent = Math.round(ceElapsed) + 's';
+
+  ceRaf = requestAnimationFrame(ceLoop);
+}
+
+function ceEndFail(reason) {
+  ceRunning = false;
+  ceHoldingStab = false;
+  document.getElementById('ce-stab-btn').classList.remove('held');
+  document.getElementById('ce-burst-outer').style.display = 'none';
+  document.getElementById('ce-burst-inner').style.display = 'none';
+  document.getElementById('ce-burst-label').style.display = '';
+  document.getElementById('ce-burst-label').textContent = 'No active burst';
+  document.getElementById('ce-start-btn').textContent = 'START SESSION';
+  document.getElementById('ce-feedback').textContent = '✖ Run ended: ' + reason + ' Lasted ' + Math.round(ceElapsed) + 's';
+  cePhysique += Math.round(ceElapsed * 0.5);
+  document.getElementById('ce-physique').textContent = cePhysique;
+}
+</script>
+</body>
+</html>
